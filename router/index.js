@@ -76,6 +76,25 @@ router.get('/api/comments', async ({ request, qs, response }) => {
  * @METHOD GET
  * @PATH /comment/:id
  */
+ router.get('/api/comments/blog/:id', async ({ qs, response, params }) => {
+  const { id } = params
+  const { fields = '' } = qs
+  const field = fields ? fields.split(',') : []
+
+  const { errno, res } = await commentService.getCommentByBlogId(id, field)
+  const responseCodeMap = {
+    [ERRNO.OK]: 200,
+    [ERRNO.DBERR]: 500,
+    [ERRNO.UN]: 500
+  }
+  response.status = responseCodeMap[errno]
+  response.body = createResBody(errno, res)
+})
+
+/**
+ * @METHOD GET
+ * @PATH /comment/:id
+ */
 router.get('/api/comments/:id', async ({ qs, response, params }) => {
   const { id } = params
   const { fields = '' } = qs
@@ -97,39 +116,31 @@ router.get('/api/comments/:id', async ({ qs, response, params }) => {
  */
 router.post('/api/comments', async ({ request, response }) => {
   const {
-    title = '',
-    subtitle = '',
-    author_id = '',
-    author_name = '',
-    tags = [],
-    body = ''
+    body = '',
+    blog_id = '',
+    user_id = '',
+    user_name = '',
   } = request.body
 
-  if (!title ||
-    !subtitle ||
-    !author_id ||
-    !author_name,
-    !body) {
+  if (!body ||
+    !blog_id ||
+    !user_id ) {
     response.status = 400
     response.body = createResBody(ERRNO.BADPARAMS)
     return
   }
 
   const { res, errno } = await commentService.postComment({
-    title,
-    subtitle,
-    author_id,
-    author_name,
-    tags,
-    body
+    body,
+    blog_id,
+    user_id ,
+    user_name,
   })
-
 
   const responseCodeMap = {
     [ERRNO.OK]: 201,
     [ERRNO.UN]: 500,
     [ERRNO.DUPID]: 400,
-    [ERRNO.DUPTITLE]: 409,
     [ERRNO.DBERR]: 500,
   }
   response.status = responseCodeMap[errno]
@@ -143,17 +154,11 @@ router.post('/api/comments', async ({ request, response }) => {
 router.put('/api/comments/:id', async ({ params, request, response }) => {
   const { id } = params
   const {
-    title = '',
-    subtitle = '',
-    tags = '',
-    body = '',
+    body = ''
   } = request.body
 
   // filter empty field
   const data = {
-    title,
-    subtitle,
-    tags,
     body
   }
   
@@ -166,7 +171,6 @@ router.put('/api/comments/:id', async ({ params, request, response }) => {
   const responseCodeMap = {
     [ERRNO.OK]: 202,
     [ERRNO.NOEXIST]: 400,
-    [ERRNO.DUPTITLE]: 409,
     [ERRNO.DBERR]: 500,
     [ERRNO.UN]: 500,
   }

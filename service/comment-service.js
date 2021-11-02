@@ -75,57 +75,36 @@ export default class CommentService {
     return await this.getCommentByCondition(condition, fields)
   }
 
+  async getCommentByBlogId (blogId, fields = []) {
+    const condition = this.sql.createColumnValueCondition('blog_id', blogId)
+    return await this.getCommentByCondition(condition, fields)
+  }
+
   async postComment (data) {
     const {
-      title,
-      subtitle,
-      author_id,
-      author_name,
-      tags,
       body,
+      blog_id,
+      user_id ,
+      user_name,
     } = data
-
-    // * Check Comment title Existed
-    const existed = await this.checkExistedTitle(title)
-    if (existed) return this.createRes(ERRNO.DUPTITLE)
-
     
     // * Created Time 
     const created_time = (new Date()).getTime()
   
-    const updated_time = created_time
-
     const fn = async () => await this.sql.insertStatement(this.schema, this.table, {
-      title,
-      subtitle,
-      author_id,
-      author_name,
       body,
+      blog_id,
+      user_id ,
+      user_name,
       created_time,
-      updated_time,
     })
     return await this.executeWithTry(fn, false)
   }
 
   async updateComment (id, data = {}) {
-
-    const { title = '' } = data
-
     // * Check Comment Existed
     const nonExisted = await this.checkNonExistedId(id)
     if (nonExisted) return this.createRes(ERRNO.NOEXIST)
-
-    console.log(title)
-
-    // * Check Comment title Existed
-    if (title) {
-      const existed = await this.checkExistedTitle(title)
-      if (existed) return this.createRes(ERRNO.DUPTITLE)
-    }
-
-    const updated_time = (new Date()).getTime()
-
-    data['updated_time'] = updated_time
 
     // execute PUT
     const condition = this.sql.createColumnValueCondition('id', id)
